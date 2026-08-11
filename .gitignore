@@ -1,0 +1,22 @@
+﻿## .NET
+bin/
+obj/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+appsettings.Development.json
+.vs/
+
+## NuGet
+packages/
+
+## Test
+TestResults/
+
+## Rider
+.idea/
+
+## macOS
+.DS_Store

@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Luna Messenger Test</title>
+</head>
+<body>
+    <h1>Luna Messenger SignalR Test</h1>
+    <div>
+        <label>Token: <input type="text" id="tokenInput" size="80" /></label>
+        <button onclick="connect()">Connect</button>
+    </div>
+    <div>
+        <label>Chat ID: <input type="text" id="chatIdInput" size="40" /></label>
+        <button onclick="joinChat()">Join Chat</button>
+    </div>
+    <div>
+        <textarea id="messageInput" rows="2" cols="50"></textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div>
+        <h3>Messages:</h3>
+        <ul id="messagesList"></ul>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        let connection;
+        let currentChatId = null;
+
+        async function connect() {
+            const token = document.getElementById("tokenInput").value;
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub", { accessTokenFactory: () => token })
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            connection.on("ReceiveMessage", (message) => {
+                const li = document.createElement("li");
+                li.textContent = `${message.senderUsername}: ${message.content} (${new Date(message.sentAt).toLocaleTimeString()})`;
+                document.getElementById("messagesList").appendChild(li);
+            });
+
+            connection.on("UserTyping", (userId, isTyping) => {
+                console.log(`User ${userId} is typing: ${isTyping}`);
+            });
+
+            try {
+                await connection.start();
+                console.log("Connected!");
+                alert("Connected to SignalR hub");
+            } catch (err) {
+                console.error(err);
+                alert("Connection failed: " + err.toString());
+            }
+        }
+
+        async function joinChat() {
+            currentChatId = document.getElementById("chatIdInput").value;
+            if (connection && currentChatId) {
+                await connection.invoke("JoinChatGroup", currentChatId);
+                console.log("Joined chat " + currentChatId);
+            }
+        }
+
+        async function sendMessage() {
+            const content = document.getElementById("messageInput").value;
+            if (connection && currentChatId && content) {
+                try {
+                    await connection.invoke("SendMessage", { chatId: currentChatId, content: content });
+                    document.getElementById("messageInput").value = "";
+                } catch (err) {
+                    console.error(err);
+                    alert("Send failed: " + err.toString());
+                }
+            }
+        }
+    </script>
+</body>
+</html>
